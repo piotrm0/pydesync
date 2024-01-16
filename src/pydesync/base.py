@@ -119,29 +119,23 @@ if "pytest" in sys.modules:
             Test that func can run and produce the correct result. Assumes it is
             some wrapping of one of the two sleepy functions above.
             """
-            results = []
-
-            for i in range(10):
-                results.append(func(i=i))
+            total = sum(func(i=i) for i in range(10))
 
             # Answer is correct.
-            assert sum(results) == -(9 * 10 // 2)  # n * (n+1) / 2 for n = 9
+            assert total == -(9 * 10 // 2)  # n * (n+1) / 2 for n = 9
 
         async def _test_async(self, func):
             """
             Test that func can run in parallel. Assumes it is some wrapping of
             one of the two sleepy functions above.
             """
-            awaits = []
-
             starting_time = datetime.now()
 
-            for i in range(10):
-                awaits.append(func(i=i))
-
-            total = 0
-            for ret in await asyncio.gather(*awaits):
-                total += ret
+            total = sum(
+                await asyncio.gather(
+                    *(func(i=i) for i in range(10))
+                )
+            )
 
             ending_time = datetime.now()
 
@@ -203,6 +197,23 @@ if "pytest" in sys.modules:
 
             await self._test_async(
                 desynced(Tests._sleep_some_and_return_negation)
+            )
+
+        @pytest.mark.asyncio
+        async def test_readme_example(self):
+            """
+            Test the example from `README.md`.
+            """
+
+            def wait_some():
+                time.sleep(1)
+                return 1
+
+            # This should take approx. 1 second:
+            assert 10 == sum(
+                await asyncio.gather(*(
+                    desync(wait_some) for i in range(10)
+                ))
             )
 
 
