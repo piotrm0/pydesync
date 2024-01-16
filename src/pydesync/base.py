@@ -131,11 +131,7 @@ if "pytest" in sys.modules:
             """
             starting_time = datetime.now()
 
-            total = sum(
-                await asyncio.gather(
-                    *(func(i=i) for i in range(10))
-                )
-            )
+            total = sum(await asyncio.gather(*(func(i=i) for i in range(10))))
 
             ending_time = datetime.now()
 
@@ -173,7 +169,9 @@ if "pytest" in sys.modules:
             Test a `synced` on an asynchronous sleeper. Checks that it produces
             the expected results only.
             """
-            self._test_sync(synced(Tests._async_sleep_some_and_return_negation))
+            self._test_sync(
+                synced(Tests._async_sleep_some_and_return_negation)
+            )
 
         @pytest.mark.asyncio
         async def test_desync(self):
@@ -211,9 +209,7 @@ if "pytest" in sys.modules:
 
             # This should take approx. 1 second:
             assert 10 == sum(
-                await asyncio.gather(*(
-                    desync(wait_some) for i in range(10)
-                ))
+                await asyncio.gather(*(desync(wait_some) for i in range(10)))
             )
 
 

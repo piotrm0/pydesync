@@ -1,4 +1,4 @@
 [style]
-based_on_style = google
+based_on_style = pep8
 DEDENT_CLOSING_BRACKETS=true
 SPLIT_BEFORE_FIRST_ARGUMENT=true
