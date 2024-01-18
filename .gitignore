@@ -1,4 +1,6 @@
 this.egg-info
 dist
+conda
 *.egg-info
 *.pyc
+.vscode
