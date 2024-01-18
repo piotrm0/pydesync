@@ -5,4 +5,4 @@ upload: dist
 	python3 -m twine upload --repository testpypi dist/* --config-file=~/.pypirc
 
 test:
-	python3 -m pytest src/pydesync/all.py
+	PYTHONPATH=src python3 -m pytest tests/test_all.py
