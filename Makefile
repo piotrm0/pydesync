@@ -1,4 +1,7 @@
-CONDA_ACTIVATE := source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate ; conda activate
+CONDA_ACTIVATE:= \
+	source $$(conda info --base)/etc/profile.d/conda.sh; \
+	conda activate; \
+	conda activate
 
 dist: LICENSE Makefile README.md pyproject.toml src tests
 	python3 -m build
@@ -25,4 +28,3 @@ test%: conda/py%
 		PYTHONPATH=src \
 			python -m pytest \
 			tests/test_all.py
-

@@ -10,7 +10,7 @@ authors = [
 ]
 description = "Convert async functions to sync and vice versa."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Artistic License",
