@@ -4,8 +4,7 @@ import inspect
 import threading
 from typing import Awaitable, Callable, TypeVar, Union
 
-A = TypeVar("A")
-B = TypeVar("B")
+T = TypeVar("T")
 
 if hasattr(asyncio, "to_thread"):
     to_thread = asyncio.to_thread
@@ -22,8 +21,8 @@ else:
 
 
 def sync(
-    func: Union[Callable[[A], B], Callable[[A], Awaitable[B]]], *args, **kwargs
-) -> B:
+    func: Union[Callable[..., T], Callable[..., Awaitable[T]]], *args, **kwargs
+) -> T:
     """
     Run the given function `func` on the given `args` and `kwargs`,
     synchronously even if it was asynchronous . Returns the evaluated (not
@@ -72,8 +71,8 @@ def sync(
 
 
 def desync(
-    func: Union[Callable[[A], B], Callable[[A], Awaitable[B]]], *args, **kwargs
-) -> Awaitable[B]:
+    func: Union[Callable[..., T], Callable[..., Awaitable[T]]], *args, **kwargs
+) -> Awaitable[T]:
     """
     Produce the awaitable of the given function's, `func`, run on the given
     `args` and `kwargs`, asynchronously, and return its awaitable of the result.
@@ -86,8 +85,8 @@ def desync(
 
 
 def synced(
-    func: Union[Callable[[A], B], Callable[[A], Awaitable[B]]]
-) -> Callable[[A], B]:
+    func: Union[Callable[..., T], Callable[..., Awaitable[T]]]
+) -> Callable[..., T]:
     """
     Produce a synced version of the given function `func`. If `func` returns an
     awaitable, the synced version will return the result of that awaitable
@@ -105,8 +104,8 @@ def synced(
 
 
 def desynced(
-    func: Union[Callable[[A], B], Callable[[A], Awaitable[B]]]
-) -> Callable[[A], Awaitable[B]]:
+    func: Union[Callable[..., T], Callable[..., Awaitable[T]]]
+) -> Callable[..., Awaitable[T]]:
     """
     Return a desynced version of the given func. The desynced function returns
     an awaitable of what the original returned. If the given function was
