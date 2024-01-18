@@ -88,6 +88,45 @@ def desync(
         return to_thread(func, *args, **kwargs)
 
 
+def synced(
+    func: Union[Callable[[A], B], Callable[[A], Awaitable[B]]]
+) -> Callable[[A], B]:
+    """
+    Produce a synced version of the given function `func`. If `func` returns an
+    awaitable, the synced version will return the result of that awaitable
+    instead. If the given function was not asynchronous, returns it as is.
+    """
+
+    if not inspect.iscoroutinefunction(func):
+        return func
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return sync(*args, func=func, **kwargs)
+
+    return wrapper
+
+
+def desynced(
+    func: Union[Callable[[A], B], Callable[[A], Awaitable[B]]]
+) -> Callable[[A], Awaitable[B]]:
+    """
+    Return a desynced version of the given func. The desynced function returns
+    an awaitable of what the original returned. If the given function was
+    already asynchronous, returns it as is. That is, it will not wrap the
+    awaitable in another layer of awaitable.
+    """
+
+    if inspect.iscoroutinefunction(func):
+        return func
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return desync(*args, func=func, **kwargs)
+
+    return wrapper
+
+
 if "pytest" in sys.modules:
     import pytest
 
@@ -211,42 +250,3 @@ if "pytest" in sys.modules:
             assert 10 == sum(
                 await asyncio.gather(*(desync(wait_some) for i in range(10)))
             )
-
-
-def synced(
-    func: Union[Callable[[A], B], Callable[[A], Awaitable[B]]]
-) -> Callable[[A], B]:
-    """
-    Produce a synced version of the given function `func`. If `func` returns an
-    awaitable, the synced version will return the result of that awaitable
-    instead. If the given function was not asynchronous, returns it as is.
-    """
-
-    if not inspect.iscoroutinefunction(func):
-        return func
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        return sync(*args, func=func, **kwargs)
-
-    return wrapper
-
-
-def desynced(
-    func: Union[Callable[[A], B], Callable[[A], Awaitable[B]]]
-) -> Callable[[A], Awaitable[B]]:
-    """
-    Return a desynced version of the given func. The desynced function returns
-    an awaitable of what the original returned. If the given function was
-    already asynchronous, returns it as is. That is, it will not wrap the
-    awaitable in another layer of awaitable.
-    """
-
-    if inspect.iscoroutinefunction(func):
-        return func
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        return desync(*args, func=func, **kwargs)
-
-    return wrapper

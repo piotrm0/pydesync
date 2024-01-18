@@ -1,6 +1,5 @@
-from pydesync.base import sync, desync, synced, desynced
+from pydesync.all import sync, desync, synced, desynced
 
-__all__ = [
-    sync, desync,
-    synced, desynced
-]
+__version__ = "0.1.1"
+
+__all__ = ["sync", "desync", "synced", "desynced"]
