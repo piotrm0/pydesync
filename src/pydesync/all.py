@@ -2,7 +2,7 @@ import asyncio
 import functools
 import inspect
 import threading
-from typing import Awaitable, Callable, TypeVar, Union
+from typing import Any, Awaitable, Callable, TypeVar, Union
 
 T = TypeVar("T")
 
@@ -20,6 +20,22 @@ else:
         return await loop.run_in_executor(None, func_call)
 
 
+def iscoroutinefunction_or_wrapper(func: Any) -> bool:
+    if inspect.iscoroutinefunction(func):
+        return True
+
+    # Sometimes __wrapped__ is not coroutinefunction even if func is so the
+    # check above comes first.
+    if hasattr(func, "__wrapped__"):
+        # See
+        # https://docs.python.org/3/library/functools.html#functools.update_wrapper
+        # . Async functions wrapped by functools are not recognized as
+        # coroutinefunction.
+        return inspect.iscoroutinefunction(func.__wrapped__)
+    else:
+        return False
+
+
 def sync(
     func: Union[Callable[..., T], Callable[..., Awaitable[T]]], *args, **kwargs
 ) -> T:
@@ -29,29 +45,33 @@ def sync(
     awaitable) result of the function.
     """
 
-    if inspect.iscoroutinefunction(func):
+    maybe_awaitable = func(*args, **kwargs)
+
+    if inspect.isawaitable(maybe_awaitable):
+        maybe_awaitable: Awaitable
+
         try:
             # If loop not running, will be able to run a new one until complete.
             loop = asyncio.new_event_loop()
-            return loop.run_until_complete(func(*args, **kwargs))
+            return loop.run_until_complete(maybe_awaitable)
 
         except Exception:
             # If loop is already running, will hit exception so create one in a
             # new thread instead.
 
-            def in_thread(func, *args, **kwargs):
+            def in_thread(awaitable):
                 th = threading.current_thread()
                 th.ret = None
                 th.exc = None
 
                 loop = asyncio.new_event_loop()
                 try:
-                    th.ret = loop.run_until_complete(func(*args, **kwargs))
+                    th.ret = loop.run_until_complete(awaitable)
                 except Exception as e:
                     th.exc = e
 
             th = threading.Thread(
-                target=in_thread, args=(func, *args), kwargs=kwargs
+                target=in_thread, args=(maybe_awaitable,)
             )
 
             th.start()
@@ -65,9 +85,9 @@ def sync(
                 return th.ret
 
     else:
-        # If not coroutinefunction, run it without loop.
+        # If not awaitable, return it without futher evaluation.
 
-        return func(*args, **kwargs)
+        return maybe_awaitable
 
 
 def desync(
@@ -78,7 +98,7 @@ def desync(
     `args` and `kwargs`, asynchronously, and return its awaitable of the result.
     """
 
-    if inspect.iscoroutinefunction(func):
+    if iscoroutinefunction_or_wrapper(func):
         return func(*args, **kwargs)
     else:
         return to_thread(func, *args, **kwargs)
@@ -93,7 +113,7 @@ def synced(
     instead. If the given function was not asynchronous, returns it as is.
     """
 
-    if not inspect.iscoroutinefunction(func):
+    if not iscoroutinefunction_or_wrapper(func):
         return func
 
     @functools.wraps(func)
@@ -113,7 +133,7 @@ def desynced(
     awaitable in another layer of awaitable.
     """
 
-    if inspect.iscoroutinefunction(func):
+    if iscoroutinefunction_or_wrapper(func):
         return func
 
     @functools.wraps(func)

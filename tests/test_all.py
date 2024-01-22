@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import time
 from datetime import datetime
 
@@ -20,6 +21,16 @@ class Tests:
         await asyncio.sleep(Tests.SHORT_TIME)
         return -i
 
+    # python 3.10 requires this order of decorators.
+    @staticmethod
+    @functools.wraps(_async_sleep_some_and_return_negation)
+    async def _async_sleep_some_and_return_negation_wrapper(*args, **kwargs):
+        """
+        Wrapper of the above.
+        """
+
+        return await Tests._async_sleep_some_and_return_negation(*args, **kwargs)
+
     @staticmethod
     def _sleep_some_and_return_negation(i: int):
         """
@@ -29,6 +40,16 @@ class Tests:
 
         time.sleep(Tests.SHORT_TIME)
         return -i
+
+    # python 3.10 requires this order of decorators.
+    @staticmethod
+    @functools.wraps(_sleep_some_and_return_negation)
+    def _sleep_some_and_return_negation_wrapper(*args, **kwargs):
+        """
+        Wrapper of the above.
+        """
+
+        return Tests._sleep_some_and_return_negation(*args, **kwargs)
 
     def _test_sync(self, func):
         """
@@ -68,7 +89,10 @@ class Tests:
         """
 
         await self._test_async(Tests._async_sleep_some_and_return_negation)
+        await self._test_async(Tests._async_sleep_some_and_return_negation_wrapper)
+        
         self._test_sync(Tests._sleep_some_and_return_negation)
+        self._test_sync(Tests._sleep_some_and_return_negation_wrapper)
 
     def test_sync(self):
         """
@@ -80,13 +104,30 @@ class Tests:
             sync(Tests._async_sleep_some_and_return_negation, i=i)
         )
 
+    def test_sync_wrapped(self):
+        """
+        Test a `sync` on a wrapper.
+        """
+        self._test_sync(
+            lambda i:
+            sync(Tests._async_sleep_some_and_return_negation_wrapper, i=i)
+        )
+
     def test_synced(self):
         """
-        Test a `synced` on an asynchronous sleeper. Checks that it produces
+        Test `synced` on an asynchronous sleeper. Checks that it produces
         the expected results only.
         """
         self._test_sync(
             synced(Tests._async_sleep_some_and_return_negation)
+        )
+
+    def test_synced_wrapped(self):
+        """
+        Test `synced` on a wrapper.
+        """
+        self._test_sync(
+            synced(Tests._async_sleep_some_and_return_negation_wrapper)
         )
 
     @pytest.mark.asyncio
@@ -102,6 +143,16 @@ class Tests:
         )
 
     @pytest.mark.asyncio
+    async def test_desync_wrapped(self):
+        """
+        Test `desync` on a wrapper.
+        """
+
+        await self._test_async(
+            lambda i: desync(Tests._sleep_some_and_return_negation_wrapper, i=i)
+        )
+
+    @pytest.mark.asyncio
     async def test_desynced(self):
         """
         Test `desynced` on the synchronous sleeper. Checks that it produces
@@ -111,6 +162,16 @@ class Tests:
 
         await self._test_async(
             desynced(Tests._sleep_some_and_return_negation)
+        )
+
+    @pytest.mark.asyncio
+    async def test_desynced_wrapped(self):
+        """
+        Test `desynced` on a wrapper.
+        """
+
+        await self._test_async(
+            desynced(Tests._sleep_some_and_return_negation_wrapper)
         )
 
     @pytest.mark.asyncio
